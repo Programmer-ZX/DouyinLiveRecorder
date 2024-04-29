@@ -1554,13 +1554,13 @@ def backup_file(file_path: str, backup_dir_path: str):
         url_files.sort(key=lambda x: os.path.getmtime(os.path.join(backup_dir_path, x)))
         config_files.sort(key=lambda x: os.path.getmtime(os.path.join(backup_dir_path, x)))
 
-        while len(url_files) > 5:
+        while len(url_files) > 1:
             oldest_file = url_files[0]
             os.remove(os.path.join(backup_dir_path, oldest_file))
             # print(f'\r已删除最旧的 URL_config.ini 备份文件 {oldest_file}')
             url_files = url_files[1:]
 
-        while len(config_files) > 5:
+        while len(config_files) > 1:
             oldest_file = config_files[0]
             os.remove(os.path.join(backup_dir_path, oldest_file))
             # print(f'\r已删除最旧的 config.ini 备份文件 {oldest_file}')

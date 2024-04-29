@@ -29,13 +29,11 @@ from utils import (
 )
 import http.cookiejar
 
-no_proxy_handler = urllib.request.ProxyHandler({})
-opener = urllib.request.build_opener(no_proxy_handler)
-
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
-
+no_proxy_handler = urllib.request.HTTPSHandler(context=ssl_context)
+opener = urllib.request.build_opener(no_proxy_handler)
 
 def get_req(
         url: str,
