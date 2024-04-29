@@ -279,6 +279,8 @@ def change_max_connect():
 def get_douyin_stream_url(json_data: dict, video_quality: str) -> dict:
     # TODO: 获取抖音直播源地址
 
+    print(json_data)
+
     anchor_name = json_data.get('anchor_name', None)
 
     result = {
@@ -1137,9 +1139,7 @@ def start_record(url_data: tuple, count_variable: int = -1):
                                     logger.error(
                                         "错误信息: 保存路径不存在,不能生成录制.请避免把本程序放在c盘,桌面,下载文件夹,qq默认传输目录.请重新检查设置")
 
-                                user_agent = ("Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 ("
-                                              "KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile "
-                                              "Safari/537.36")
+                                user_agent = ("Mozilla/5.0 (iPhone; CPU iPhone OS 15_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Version/15.2.1 Safari/605.1.15")
 
                                 analyzeduration = "20000000"
                                 probesize = "10000000"
@@ -1200,10 +1200,35 @@ def start_record(url_data: tuple, count_variable: int = -1):
 
                                     try:
                                         flv_url = port_info.get('flv_url', None)
+                                        print("flv:", flv_url)
                                         if flv_url:
-                                            _filepath, _ = urllib.request.urlretrieve(real_url,
-                                                                                      full_path + '/' + filename)
+                                            # _filepath, _ = urllib.request.urlretrieve(flv_url,
+                                                                                    #   full_path + '/' + filename)
+                                            import requests
+                                            from requests.adapters import HTTPAdapter
                                             record_finished = True
+                                            s = requests.Session()
+                                            s.mount(flv_url, HTTPAdapter(max_retries=3))
+                                            for retry in range(1, 5):
+                                                if retry == 4:
+                                                    raise Exception('直播获取超时。')
+                                                try:
+                                                    downloading = s.get(
+                                                        flv_url, timeout=(5, 10), verify=False, stream=True
+                                                    )
+                                                    break
+                                                except (Exception) as ex:
+                                                    logger.error(ex)
+
+                                            with open(full_path + '/' + filename, 'wb') as file:
+                                                try:
+                                                    for data in downloading.iter_content(chunk_size=1024):
+                                                        if data:
+                                                            file.write(data)
+                                                except requests.exceptions.ConnectionError:
+                                                    # 下载出错(一般是下载超时)，可能是直播已结束，或主播长时间卡顿，先结束录制，然后再检测是否在直播
+                                                    raise Exception('下载异常')
+
                                         else:
                                             raise Exception('该直播无flv直播流，请切换视频保存类型')
 
@@ -1426,6 +1451,7 @@ def start_record(url_data: tuple, count_variable: int = -1):
                                                 "-segment_time", split_time,
                                                 "-segment_format", segment_format,
                                                 "-reset_timestamps", "1",
+                                                "-r", "60",
                                                 save_path_name,
                                             ]
 
@@ -1459,6 +1485,7 @@ def start_record(url_data: tuple, count_variable: int = -1):
                                                 "-c:a", "copy",
                                                 "-map", "0",
                                                 "-f", "mpegts",
+                                                "-r", "60",
                                                 "{path}".format(path=save_file_path),
                                             ]
 
