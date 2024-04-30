@@ -1188,8 +1188,9 @@ def start_record(url_data: tuple, count_variable: int = -1):
                                     logger.info(f"{platform} | {anchor_name} | 直播源地址: {port_info['record_url']}")
 
                                 if video_save_type == "FLV":
-                                    filename = anchor_name + '_' + now + '.flv'
-                                    print(f'{rec_info}/{filename}')
+                                    
+                                    filename = anchor_name + '_' + now
+                                    # print(f'{rec_info}/{filename}' + '.flv')
 
                                     if create_time_file:
                                         filename_gruop = [anchor_name, filename_short]
@@ -1219,15 +1220,30 @@ def start_record(url_data: tuple, count_variable: int = -1):
                                                     break
                                                 except (Exception) as ex:
                                                     logger.error(ex)
+                                            
+                                            start_time = datetime.datetime.now()
+                                            current_file = 0
+                                            file = None
 
-                                            with open(full_path + '/' + filename, 'wb') as file:
-                                                try:
-                                                    for data in downloading.iter_content(chunk_size=1024):
-                                                        if data:
-                                                            file.write(data)
-                                                except requests.exceptions.ConnectionError:
-                                                    # 下载出错(一般是下载超时)，可能是直播已结束，或主播长时间卡顿，先结束录制，然后再检测是否在直播
-                                                    raise Exception('下载异常')
+                                            try:
+                                                for data in downloading.iter_content(chunk_size=1024):
+                                                    if file == None or int((datetime.datetime.now() - start_time).total_seconds()) > int(split_time):
+                                                        if file != None:
+                                                            file.close()
+                                                        file = open(full_path + '/' + filename + "_" + str(current_file) +  '.flv', 'wb')
+                                                        current_file = current_file + 1
+                                                        start_time = datetime.datetime.now()
+                                                        print(f'{rec_info}/{file.name}')
+                                                    if data:
+                                                        file.write(data)
+                                            except requests.exceptions.ConnectionError:
+                                                if file != None:
+                                                    file.close()
+                                                # 下载出错(一般是下载超时)，可能是直播已结束，或主播长时间卡顿，先结束录制，然后再检测是否在直播
+                                                raise Exception('下载异常')
+                                            
+                                            if file != None:
+                                                file.close()
 
                                         else:
                                             raise Exception('该直播无flv直播流，请切换视频保存类型')
